@@ -13,11 +13,12 @@ object yolo extends App {
 
   def expr[T](implicit TC: Corecursive.Aux[T, ExprF]): T = {
     import ExprF._
-    partialF[T]((sinF[T](floatVarF[T]("x", 15d)), "x"))
-    // partialF[T]((partialF[T]((sinF[T](floatVarF[T]("x", 15d)), "x")), "x"))
+    partialF[T]((sinF[T](floatVarF[T]("x")), "x"))
+    // partialF[T]((partialF[T]((sinF[T](floatVarF[T]("x")), "x")), "x"))
   }
 
-  val reduced: Nu[CommonF] = evaluate.reduce[Nu[ExprF], Nu[CommonF]](expr[Nu[ExprF]])
+  val reduced: Nu[CommonF] =
+    evaluate.reduce[Nu[ExprF], Nu[CommonF]](expr[Nu[ExprF]])
 
   reduced.println
 

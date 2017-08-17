@@ -1,5 +1,6 @@
 package autodiff
 
+import scala.sys
 import autodiff.ast._
 import matryoshka.{Corecursive, Recursive}
 import matryoshka.implicits._
@@ -15,13 +16,13 @@ object evaluate {
     import ExprF._
 
     def coalgebraicGTransform: ExprF[T] => CommonF[Free[CommonF, T]] = {
-      case commonExprF(c) => c.map(Free.point)
+      case commonExprF(e) => e.map(Free.point)
       case extendedExprF(PartialF(t, varName)) =>
         t.project match {
-          case commonExprF(FloatVarF(`varName`, _)) =>
+          case commonExprF(FloatVarF(`varName`)) =>
             // 1
             floatConstF(1d)
-          case commonExprF(FloatVarF(_, _)) =>
+          case commonExprF(FloatVarF(_)) =>
             // 0
             floatConstF(0d)
           case commonExprF(FloatConstF(_)) =>
@@ -29,7 +30,7 @@ object evaluate {
             floatConstF(0d)
           case commonExprF(NegF(f)) =>
             // - f'(x)
-            negF(Free.point(partialF((f, varName)): T))
+            negF(Free.point[CommonF, T](partialF((f, varName))))
           case commonExprF(ExpF(f)) =>
             // exp[f(x)] f'(x)
             val fp = Free.point[CommonF, T](partialF((f, varName)))
@@ -86,6 +87,8 @@ object evaluate {
             val fPowGSubOne =
               Free.roll(powF(Free.point[CommonF, T](f), gSubOne))
             prodF(fPowGSubOne, fpGAddLogfFGp)
+          case extendedExprF(PartialF(t, varName)) =>
+            sys.error("higher-order derivatives not yet supported.")
         }
     }
 

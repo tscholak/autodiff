@@ -37,18 +37,18 @@ object ast {
       override def apply[A](fa: Equal[A]): Equal[CommonF[A]] = {
         implicit val eqA: Equal[A] = fa
         Equal.equal {
-          case (FloatVarF(n1, v1), FloatVarF(n2, v2)) => (n1 ≟ n2) && (v1 ≟ v2)
-          case (FloatConstF(v1), FloatConstF(v2))     => v1 ≟ v2
-          case (NegF(e1), NegF(e2))                   => e1 ≟ e2
-          case (ExpF(e1), ExpF(e2))                   => e1 ≟ e2
-          case (LogF(e1), LogF(e2))                   => e1 ≟ e2
-          case (SinF(e1), SinF(e2))                   => e1 ≟ e2
-          case (CosF(e1), CosF(e2))                   => e1 ≟ e2
-          case (AddF(e1, e2), AddF(e3, e4))           => (e1 ≟ e3) && (e2 ≟ e4)
-          case (SubF(e1, e2), SubF(e3, e4))           => (e1 ≟ e3) && (e2 ≟ e4)
-          case (ProdF(e1, e2), ProdF(e3, e4))         => (e1 ≟ e3) && (e2 ≟ e4)
-          case (DivF(e1, e2), DivF(e3, e4))           => (e1 ≟ e3) && (e2 ≟ e4)
-          case (PowF(e1, e2), PowF(e3, e4))           => (e1 ≟ e3) && (e2 ≟ e4)
+          case (FloatVarF(n1), FloatVarF(n2))     => n1 ≟ n2
+          case (FloatConstF(v1), FloatConstF(v2)) => v1 ≟ v2
+          case (NegF(e1), NegF(e2))               => e1 ≟ e2
+          case (ExpF(e1), ExpF(e2))               => e1 ≟ e2
+          case (LogF(e1), LogF(e2))               => e1 ≟ e2
+          case (SinF(e1), SinF(e2))               => e1 ≟ e2
+          case (CosF(e1), CosF(e2))               => e1 ≟ e2
+          case (AddF(e1, e2), AddF(e3, e4))       => (e1 ≟ e3) && (e2 ≟ e4)
+          case (SubF(e1, e2), SubF(e3, e4))       => (e1 ≟ e3) && (e2 ≟ e4)
+          case (ProdF(e1, e2), ProdF(e3, e4))     => (e1 ≟ e3) && (e2 ≟ e4)
+          case (DivF(e1, e2), DivF(e3, e4))       => (e1 ≟ e3) && (e2 ≟ e4)
+          case (PowF(e1, e2), PowF(e3, e4))       => (e1 ≟ e3) && (e2 ≟ e4)
 
           case (_, _) => false
         }
@@ -58,18 +58,18 @@ object ast {
     implicit val traverse: Traverse[CommonF] = new Traverse[CommonF] {
       override def traverseImpl[G[_], A, B](fa: CommonF[A])(f: (A) => G[B])(
           implicit evidence$1: Applicative[G]): G[CommonF[B]] = fa match {
-        case FloatVarF(n, v) => floatVarF[B](n, v).point[G]
-        case FloatConstF(v)  => floatConstF[B](v).point[G]
-        case NegF(e)         => f(e).map(negF(_))
-        case ExpF(e)         => f(e).map(expF(_))
-        case LogF(e)         => f(e).map(logF(_))
-        case SinF(e)         => f(e).map(sinF(_))
-        case CosF(e)         => f(e).map(cosF(_))
-        case AddF(e1, e2)    => (f(e1) ⊛ f(e2))(addF(_, _))
-        case SubF(e1, e2)    => (f(e1) ⊛ f(e2))(subF(_, _))
-        case ProdF(e1, e2)   => (f(e1) ⊛ f(e2))(prodF(_, _))
-        case DivF(e1, e2)    => (f(e1) ⊛ f(e2))(divF(_, _))
-        case PowF(e1, e2)    => (f(e1) ⊛ f(e2))(powF(_, _))
+        case FloatVarF(n)   => floatVarF[B](n).point[G]
+        case FloatConstF(v) => floatConstF[B](v).point[G]
+        case NegF(e)        => f(e).map(negF(_))
+        case ExpF(e)        => f(e).map(expF(_))
+        case LogF(e)        => f(e).map(logF(_))
+        case SinF(e)        => f(e).map(sinF(_))
+        case CosF(e)        => f(e).map(cosF(_))
+        case AddF(e1, e2)   => (f(e1) ⊛ f(e2))(addF(_, _))
+        case SubF(e1, e2)   => (f(e1) ⊛ f(e2))(subF(_, _))
+        case ProdF(e1, e2)  => (f(e1) ⊛ f(e2))(prodF(_, _))
+        case DivF(e1, e2)   => (f(e1) ⊛ f(e2))(divF(_, _))
+        case PowF(e1, e2)   => (f(e1) ⊛ f(e2))(powF(_, _))
       }
     }
 
@@ -77,18 +77,18 @@ object ast {
       new Delay[Show, CommonF] {
         def apply[F](eq: Show[F]): Show[CommonF[F]] =
           Show.show({
-            case FloatVarF(n, v) => Cord(s"FloatVarF($n, $v)")
-            case FloatConstF(v)  => Cord(s"FloatConstF($v)")
-            case NegF(v)         => Cord(s"NegF($v)")
-            case ExpF(v)         => Cord(s"ExpF($v)")
-            case LogF(v)         => Cord(s"LogF($v)")
-            case SinF(v)         => Cord(s"SinF($v)")
-            case CosF(v)         => Cord(s"CosF($v)")
-            case AddF(e1, e2)    => Cord(s"AddF($e1, $e2)")
-            case SubF(e1, e2)    => Cord(s"SubF($e1, $e2)")
-            case ProdF(e1, e2)   => Cord(s"ProdF($e1, $e2)")
-            case DivF(e1, e2)    => Cord(s"DivF($e1, $e2)")
-            case PowF(e1, e2)    => Cord(s"PowF($e1, $e2)")
+            case FloatVarF(n)   => Cord(s"FloatVarF($n)")
+            case FloatConstF(v) => Cord(s"FloatConstF($v)")
+            case NegF(v)        => Cord(s"NegF($v)")
+            case ExpF(v)        => Cord(s"ExpF($v)")
+            case LogF(v)        => Cord(s"LogF($v)")
+            case SinF(v)        => Cord(s"SinF($v)")
+            case CosF(v)        => Cord(s"CosF($v)")
+            case AddF(e1, e2)   => Cord(s"AddF($e1, $e2)")
+            case SubF(e1, e2)   => Cord(s"SubF($e1, $e2)")
+            case ProdF(e1, e2)  => Cord(s"ProdF($e1, $e2)")
+            case DivF(e1, e2)   => Cord(s"DivF($e1, $e2)")
+            case PowF(e1, e2)   => Cord(s"PowF($e1, $e2)")
           })
       }
 
@@ -118,13 +118,12 @@ object ast {
 
   }
 
-  @Lenses final case class FloatVarF[A](name: String, value: Double)
-      extends CommonF[A]
+  @Lenses final case class FloatVarF[A](name: String) extends CommonF[A]
 
-  def floatVarF[A]: Prism[CommonF[A], (String, Double)] =
-    Prism.partial[CommonF[A], (String, Double)] {
-      case FloatVarF(n, v) => (n, v)
-    }(Function.tupled(FloatVarF.apply))
+  def floatVarF[A]: Prism[CommonF[A], String] =
+    Prism.partial[CommonF[A], String] {
+      case FloatVarF(n) => n
+    }(FloatVarF.apply)
 
   @Lenses final case class FloatConstF[A](value: Double) extends CommonF[A]
 
