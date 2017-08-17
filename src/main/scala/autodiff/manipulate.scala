@@ -1,14 +1,45 @@
 package autodiff
 
-import scala.sys
+import scala.{Double, Option, Some, sys}
+import scala.Predef.{Map, String}
+import scala.math.{cos, exp, log, pow, sin}
 import autodiff.ast._
-import matryoshka.{Corecursive, Recursive}
+import matryoshka.{AlgebraM, Corecursive, Recursive}
 import matryoshka.implicits._
 import scalaz._
 import Scalaz._
 import scalaz.Liskov._
 
-object evaluate {
+object manipulate {
+
+  def evaluate[T](e: T)(implicit TR: Recursive.Aux[T, CommonF],
+                        TC: Corecursive.Aux[T, CommonF])
+    : State[Map[String, Double], Option[Double]] = {
+
+    val S = StateT.stateMonad[Map[String, Double]]
+    import S._
+
+    def algebra
+      : AlgebraM[State[Map[String, Double], ?], CommonF, Option[Double]] = {
+      case FloatVarF(n) =>
+        for {
+          m <- get
+        } yield m.get(n)
+      case FloatConstF(v) => point(Some(v))
+      case NegF(x)        => point(x.map(-_))
+      case ExpF(x)        => point(x.map(exp))
+      case LogF(x)        => point(x.map(log))
+      case SinF(x)        => point(x.map(sin))
+      case CosF(x)        => point(x.map(cos))
+      case AddF(x, y)     => point((x ⊛ y)(_ + _))
+      case SubF(x, y)     => point((x ⊛ y)(_ - _))
+      case ProdF(x, y)    => point((x ⊛ y)(_ * _))
+      case DivF(x, y)     => point((x ⊛ y)(_ / _))
+      case PowF(x, y)     => point((x ⊛ y)(pow))
+    }
+
+    e.cataM(algebra)
+  }
 
   def reduce[T, U](e: T)(implicit TR: Recursive.Aux[T, ExprF],
                          TC: Corecursive.Aux[T, ExprF],

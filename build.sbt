@@ -63,7 +63,8 @@ libraryDependencies ++= Seq(
 )
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4")
-addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.0" cross CrossVersion.patch)
+addCompilerPlugin(
+  "org.scalamacros" %% "paradise" % "2.1.0" cross CrossVersion.patch)
 
 resolvers ++= Seq(
   Resolver.bintrayRepo("non", "maven"),

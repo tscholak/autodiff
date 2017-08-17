@@ -1,6 +1,7 @@
 package autodiff
 
 import scala.App
+import scala.Predef.{ArrowAssoc, Map}
 import autodiff.ast._
 import matryoshka.data.Nu
 import matryoshka.Corecursive
@@ -18,8 +19,10 @@ object yolo extends App {
   }
 
   val reduced: Nu[CommonF] =
-    evaluate.reduce[Nu[ExprF], Nu[CommonF]](expr[Nu[ExprF]])
+    manipulate.reduce[Nu[ExprF], Nu[CommonF]](expr[Nu[ExprF]])
 
   reduced.println
+
+  manipulate.evaluate(reduced).run(Map("x" -> 0d)).println
 
 }
