@@ -1,10 +1,10 @@
 package autodiff
 
-import scala.{::, Int, Double, Option, Some}
+import scala.{::, Double, Int, Nil, Option, Some}
 import scala.Predef.{ArrowAssoc, Map, String}
 import scala.math._
 import autodiff.ast._
-import matryoshka.{AlgebraM, Corecursive, Recursive}
+import matryoshka.{AlgebraM, Birecursive, Corecursive, EndoTransform, Recursive}
 import matryoshka.implicits._
 
 import scalaz._
@@ -13,8 +13,7 @@ import scalaz.Liskov._
 
 object manipulate {
 
-  def evaluate[T](e: T)(implicit TR: Recursive.Aux[T, CommonF],
-                        TC: Corecursive.Aux[T, CommonF]): State[Map[String, Double], Option[Double]] = {
+  def evaluate[T](e: T)(implicit T: Birecursive.Aux[T, CommonF]): State[Map[String, Double], Option[Double]] = {
 
     val S = StateT.stateMonad[Map[String, Double]]
     import S._
@@ -38,21 +37,86 @@ object manipulate {
     e.cataM(algebra)
   }
 
+  def simplify[T](e: T)(implicit T: Birecursive.Aux[T, CommonF]): T = {
+    val endoTransform: EndoTransform[T, CommonF] = {
+      case IdF(x) => x.project
+      case e @ ExpF(x) =>
+        x.project match {
+          case FloatConstF(0d) => FloatConstF(1d)
+          case _               => e
+        }
+      case e @ LogF(x) =>
+        x.project match {
+          case FloatConstF(1d) => FloatConstF(0d)
+          case _               => e
+        }
+      case e @ SinF(x) =>
+        x.project match {
+          case FloatConstF(0d) => FloatConstF(0d)
+          case _               => e
+        }
+      case e @ CosF(x) =>
+        x.project match {
+          case FloatConstF(0d) => FloatConstF(1d)
+          case _               => e
+        }
+      case e @ AddF(x, y) =>
+        (x.project, y.project) match {
+          case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 + v2)
+          case (FloatConstF(0d), y)               => y
+          case (x, FloatConstF(0d))               => x
+          case _                                  => e
+        }
+      case e @ SubF(x, y) =>
+        (x.project, y.project) match {
+          case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 - v2)
+          case (FloatConstF(0d), _)               => NegF(y)
+          case (x, FloatConstF(0d))               => x
+          case _                                  => e
+        }
+      case e @ ProdF(x, y) =>
+        (x.project, y.project) match {
+          // case (FloatConstF(0d), _) => FloatConstF(0d)
+          // case (_, FloatConstF(0d)) => FloatConstF(0d)
+          case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 * v2)
+          case (FloatConstF(1d), y)               => y
+          case (x, FloatConstF(1d))               => x
+          case _                                  => e
+        }
+      case e @ DivF(x, y) =>
+        (x.project, y.project) match {
+          // case (FloatConstF(0d), _) => FloatConstF(0d)
+          case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 / v2)
+          case (x, FloatConstF(1d))               => x
+          case _                                  => e
+        }
+      case e @ PowF(x, y) =>
+        (x.project, y.project) match {
+          // case (x, FloatConstF(0d)) => FloatConstF(1d)
+          case (x, FloatConstF(1d)) => x
+          case _                    => e
+        }
+      case e => e
+    }
+
+    e.transCata[T](endoTransform)
+  }
+
   def reduce[T, U](
       e: T)(implicit TR: Recursive.Aux[T, ExprF], TC: Corecursive.Aux[T, ExprF], UC: Corecursive.Aux[U, CommonF]): U = {
     import ExprF._
 
     def aux(vars: Map[String, Int])(t: T, tp: String => T): CommonF[Free[CommonF, T]] = {
-      vars.toList match {
+      idF(Free.point[CommonF, T](vars.toList match {
         case (name, n) :: tl if n > 1 =>
-          idF(Free.point[CommonF, T](partialF((tp(name), ((name -> (n - 1)) :: tl).toMap))))
+          partialF((tp(name), ((name -> (n - 1)) :: tl).toMap))
         case (name, n) :: tl if n == 1 =>
-          idF(Free.point[CommonF, T](partialF((tp(name), tl.toMap))))
+          partialF((tp(name), tl.toMap))
         case _ :: tl =>
-          idF(Free.point[CommonF, T](partialF((t, tl.toMap))))
-        case _ =>
-          idF(Free.point[CommonF, T](t))
-      }
+          partialF((t, tl.toMap))
+        case Nil =>
+          t
+      }))
     }
 
     def coalgebraicGTransform: ExprF[T] => CommonF[Free[CommonF, T]] = {

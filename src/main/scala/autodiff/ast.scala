@@ -19,12 +19,10 @@ object ast {
 
   object ExprF {
 
-    implicit def fromCommonF[T](e: CommonF[T])(
-        implicit TC: Corecursive.Aux[T, ExprF]): T =
+    implicit def fromCommonF[T](e: CommonF[T])(implicit TC: Corecursive.Aux[T, ExprF]): T =
       commonExprF(e).embed
 
-    implicit def fromExtensionF[T](e: ExtensionF[T])(
-        implicit TC: Corecursive.Aux[T, ExprF]): T =
+    implicit def fromExtensionF[T](e: ExtensionF[T])(implicit TC: Corecursive.Aux[T, ExprF]): T =
       extendedExprF(e).embed
 
   }
@@ -131,8 +129,7 @@ object ast {
   @Lenses final case class FloatConstF[A](value: Double) extends CommonF[A]
 
   def floatConstF[A]: Prism[CommonF[A], Double] =
-    Prism.partial[CommonF[A], Double] { case FloatConstF(v) => v }(
-      FloatConstF.apply)
+    Prism.partial[CommonF[A], Double] { case FloatConstF(v) => v }(FloatConstF.apply)
 
   @Lenses final case class IdF[A](expr: A) extends CommonF[A]
 
@@ -167,35 +164,29 @@ object ast {
   @Lenses final case class AddF[A](expr1: A, expr2: A) extends CommonF[A]
 
   def addF[A]: Prism[CommonF[A], (A, A)] =
-    Prism.partial[CommonF[A], (A, A)] { case AddF(e1, e2) => (e1, e2) }(
-      Function.tupled(AddF.apply))
+    Prism.partial[CommonF[A], (A, A)] { case AddF(e1, e2) => (e1, e2) }(Function.tupled(AddF.apply))
 
   @Lenses final case class SubF[A](expr1: A, expr2: A) extends CommonF[A]
 
   def subF[A]: Prism[CommonF[A], (A, A)] =
-    Prism.partial[CommonF[A], (A, A)] { case SubF(e1, e2) => (e1, e2) }(
-      Function.tupled(SubF.apply))
+    Prism.partial[CommonF[A], (A, A)] { case SubF(e1, e2) => (e1, e2) }(Function.tupled(SubF.apply))
 
   @Lenses final case class ProdF[A](expr1: A, expr2: A) extends CommonF[A]
 
   def prodF[A]: Prism[CommonF[A], (A, A)] =
-    Prism.partial[CommonF[A], (A, A)] { case ProdF(e1, e2) => (e1, e2) }(
-      Function.tupled(ProdF.apply))
+    Prism.partial[CommonF[A], (A, A)] { case ProdF(e1, e2) => (e1, e2) }(Function.tupled(ProdF.apply))
 
   @Lenses final case class DivF[A](expr1: A, expr2: A) extends CommonF[A]
 
   def divF[A]: Prism[CommonF[A], (A, A)] =
-    Prism.partial[CommonF[A], (A, A)] { case DivF(e1, e2) => (e1, e2) }(
-      Function.tupled(DivF.apply))
+    Prism.partial[CommonF[A], (A, A)] { case DivF(e1, e2) => (e1, e2) }(Function.tupled(DivF.apply))
 
   @Lenses final case class PowF[A](expr1: A, expr2: A) extends CommonF[A]
 
   def powF[A]: Prism[CommonF[A], (A, A)] =
-    Prism.partial[CommonF[A], (A, A)] { case PowF(e1, e2) => (e1, e2) }(
-      Function.tupled(PowF.apply))
+    Prism.partial[CommonF[A], (A, A)] { case PowF(e1, e2) => (e1, e2) }(Function.tupled(PowF.apply))
 
-  @Lenses final case class PartialF[A](expr: A, vars: Map[String, Int])
-      extends ExtensionF[A]
+  @Lenses final case class PartialF[A](expr: A, vars: Map[String, Int]) extends ExtensionF[A]
 
   def partialF[A]: Prism[ExtensionF[A], (A, Map[String, Int])] =
     Prism.partial[ExtensionF[A], (A, Map[String, Int])] {

@@ -22,6 +22,8 @@ object yolo extends App {
 
   reduced.println
 
+  manipulate.simplify[Nu[CommonF]](reduced).println
+
   manipulate.evaluate(reduced).run(Map("x" -> 0d)).println
 
 }
