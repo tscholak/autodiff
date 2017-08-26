@@ -1,7 +1,7 @@
 package autodiff
 
-import scala.{Double, Function, StringContext}
-import scala.Predef.{implicitly, String}
+import scala.{Double, Int, Function, StringContext}
+import scala.Predef.{implicitly, Map, String}
 import matryoshka._
 import matryoshka.implicits._
 import monocle.Prism
@@ -39,6 +39,7 @@ object ast {
         Equal.equal {
           case (FloatVarF(n1), FloatVarF(n2))     => n1 ≟ n2
           case (FloatConstF(v1), FloatConstF(v2)) => v1 ≟ v2
+          case (IdF(e1), IdF(e2))                 => e1 ≟ e2
           case (NegF(e1), NegF(e2))               => e1 ≟ e2
           case (ExpF(e1), ExpF(e2))               => e1 ≟ e2
           case (LogF(e1), LogF(e2))               => e1 ≟ e2
@@ -60,6 +61,7 @@ object ast {
           implicit evidence$1: Applicative[G]): G[CommonF[B]] = fa match {
         case FloatVarF(n)   => floatVarF[B](n).point[G]
         case FloatConstF(v) => floatConstF[B](v).point[G]
+        case IdF(e)         => f(e).map(idF(_))
         case NegF(e)        => f(e).map(negF(_))
         case ExpF(e)        => f(e).map(expF(_))
         case LogF(e)        => f(e).map(logF(_))
@@ -79,6 +81,7 @@ object ast {
           Show.show({
             case FloatVarF(n)   => Cord(s"FloatVarF($n)")
             case FloatConstF(v) => Cord(s"FloatConstF($v)")
+            case IdF(v)         => Cord(s"IdF($v)")
             case NegF(v)        => Cord(s"NegF($v)")
             case ExpF(v)        => Cord(s"ExpF($v)")
             case LogF(v)        => Cord(s"LogF($v)")
@@ -103,8 +106,8 @@ object ast {
         override def apply[A](fa: Equal[A]): Equal[ExtensionF[A]] = {
           implicit val eqA: Equal[A] = fa
           Equal.equal {
-            case (PartialF(e1, varName1), PartialF(e2, varName2)) =>
-              (e1 ≟ e2) && (varName1 ≟ varName2)
+            case (PartialF(e1, vs1), PartialF(e2, vs2)) =>
+              (e1 ≟ e2) && (vs1 ≟ vs2)
           }
         }
       }
@@ -112,7 +115,7 @@ object ast {
     implicit val traverse: Traverse[ExtensionF] = new Traverse[ExtensionF] {
       override def traverseImpl[G[_], A, B](fa: ExtensionF[A])(f: (A) => G[B])(
           implicit evidence$1: Applicative[G]): G[ExtensionF[B]] = fa match {
-        case PartialF(e, varName) => f(e).map(partialF[B](_, varName))
+        case PartialF(e, vs) => f(e).map(partialF[B](_, vs))
       }
     }
 
@@ -130,6 +133,11 @@ object ast {
   def floatConstF[A]: Prism[CommonF[A], Double] =
     Prism.partial[CommonF[A], Double] { case FloatConstF(v) => v }(
       FloatConstF.apply)
+
+  @Lenses final case class IdF[A](expr: A) extends CommonF[A]
+
+  def idF[A]: Prism[CommonF[A], A] =
+    Prism.partial[CommonF[A], A] { case IdF(e) => e }(IdF.apply)
 
   @Lenses final case class NegF[A](expr: A) extends CommonF[A]
 
@@ -186,12 +194,12 @@ object ast {
     Prism.partial[CommonF[A], (A, A)] { case PowF(e1, e2) => (e1, e2) }(
       Function.tupled(PowF.apply))
 
-  @Lenses final case class PartialF[A](expr: A, varName: String)
+  @Lenses final case class PartialF[A](expr: A, vars: Map[String, Int])
       extends ExtensionF[A]
 
-  def partialF[A]: Prism[ExtensionF[A], (A, String)] =
-    Prism.partial[ExtensionF[A], (A, String)] {
-      case PartialF(e, varName) => (e, varName)
+  def partialF[A]: Prism[ExtensionF[A], (A, Map[String, Int])] =
+    Prism.partial[ExtensionF[A], (A, Map[String, Int])] {
+      case PartialF(e, vars) => (e, vars)
     }(Function.tupled(PartialF.apply))
 
 }
