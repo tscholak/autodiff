@@ -40,10 +40,11 @@ object manipulate {
   def simplify[T](e: T)(implicit T: Birecursive.Aux[T, CommonF]): T = {
     val endoTransform: EndoTransform[T, CommonF] = {
       case IdF(x) => x.project
-      case e @ NegF(x) => x.project match {
-        case NegF(x) => x.project
-        case _ => e
-      }
+      case e @ NegF(x) =>
+        x.project match {
+          case NegF(x) => x.project
+          case _       => e
+        }
       case e @ ExpF(x) =>
         x.project match {
           case FloatConstF(0d) => FloatConstF(1d)
