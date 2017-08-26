@@ -40,6 +40,10 @@ object manipulate {
   def simplify[T](e: T)(implicit T: Birecursive.Aux[T, CommonF]): T = {
     val endoTransform: EndoTransform[T, CommonF] = {
       case IdF(x) => x.project
+      case e @ NegF(x) => x.project match {
+        case NegF(x) => x.project
+        case _ => e
+      }
       case e @ ExpF(x) =>
         x.project match {
           case FloatConstF(0d) => FloatConstF(1d)
@@ -76,8 +80,12 @@ object manipulate {
         }
       case e @ ProdF(x, y) =>
         (x.project, y.project) match {
-          // case (FloatConstF(0d), _) => FloatConstF(0d)
-          // case (_, FloatConstF(0d)) => FloatConstF(0d)
+          case (FloatConstF(0d), _) =>
+            // unsafe
+            FloatConstF(0d)
+          case (_, FloatConstF(0d)) =>
+            // unsafe
+            FloatConstF(0d)
           case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 * v2)
           case (FloatConstF(1d), y)               => y
           case (x, FloatConstF(1d))               => x
@@ -85,14 +93,18 @@ object manipulate {
         }
       case e @ DivF(x, y) =>
         (x.project, y.project) match {
-          // case (FloatConstF(0d), _) => FloatConstF(0d)
+          case (FloatConstF(0d), _) =>
+            // unsafe
+            FloatConstF(0d)
           case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 / v2)
           case (x, FloatConstF(1d))               => x
           case _                                  => e
         }
       case e @ PowF(x, y) =>
         (x.project, y.project) match {
-          // case (x, FloatConstF(0d)) => FloatConstF(1d)
+          case (x, FloatConstF(0d)) =>
+            // unsafe
+            FloatConstF(1d)
           case (x, FloatConstF(1d)) => x
           case _                    => e
         }
