@@ -1,10 +1,10 @@
 package autodiff
 
-import scala.{::, Double, Int, Nil, Option, Some}
+import scala.{::, Boolean, Double, Int, Nil, Option, Some}
 import scala.Predef.{ArrowAssoc, Map, String}
 import scala.math._
 import autodiff.ast._
-import matryoshka.{AlgebraM, Birecursive, Corecursive, EndoTransform, Recursive}
+import matryoshka.{AlgebraM, Birecursive, Corecursive, EndoTransform}
 import matryoshka.implicits._
 
 import scalaz._
@@ -13,7 +13,7 @@ import scalaz.Liskov._
 
 object manipulate {
 
-  def evaluate[T](e: T)(implicit T: Birecursive.Aux[T, CommonF]): State[Map[String, Double], Option[Double]] = {
+  def evaluate[T](t: T)(implicit T: Birecursive.Aux[T, CommonF]): State[Map[String, Double], Option[Double]] = {
 
     val S = StateT.stateMonad[Map[String, Double]]
     import S._
@@ -34,10 +34,10 @@ object manipulate {
       case PowF(x, y)     => point((x ⊛ y)(pow))
     }
 
-    e.cataM(algebra)
+    t.cataM(algebra)
   }
 
-  def simplify[T](e: T)(implicit T: Birecursive.Aux[T, CommonF]): T = {
+  def simplify[T](t: T)(pedantic: Boolean)(implicit T: Birecursive.Aux[T, CommonF]): T = {
     val endoTransform: EndoTransform[T, CommonF] = {
       case IdF(x) => x.project
       case e @ NegF(x) =>
@@ -81,12 +81,8 @@ object manipulate {
         }
       case e @ ProdF(x, y) =>
         (x.project, y.project) match {
-          case (FloatConstF(0d), _) =>
-            // unsafe
-            FloatConstF(0d)
-          case (_, FloatConstF(0d)) =>
-            // unsafe
-            FloatConstF(0d)
+          case (FloatConstF(0d), _) if !pedantic  => FloatConstF(0d)
+          case (_, FloatConstF(0d)) if !pedantic  => FloatConstF(0d)
           case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 * v2)
           case (FloatConstF(1d), y)               => y
           case (x, FloatConstF(1d))               => x
@@ -94,29 +90,24 @@ object manipulate {
         }
       case e @ DivF(x, y) =>
         (x.project, y.project) match {
-          case (FloatConstF(0d), _) =>
-            // unsafe
-            FloatConstF(0d)
+          case (FloatConstF(0d), _) if !pedantic  => FloatConstF(0d)
           case (FloatConstF(v1), FloatConstF(v2)) => FloatConstF(v1 / v2)
           case (x, FloatConstF(1d))               => x
           case _                                  => e
         }
       case e @ PowF(x, y) =>
         (x.project, y.project) match {
-          case (x, FloatConstF(0d)) =>
-            // unsafe
-            FloatConstF(1d)
-          case (x, FloatConstF(1d)) => x
-          case _                    => e
+          case (x, FloatConstF(0d)) if !pedantic => FloatConstF(1d)
+          case (x, FloatConstF(1d))              => x
+          case _                                 => e
         }
       case e => e
     }
 
-    e.transCata[T](endoTransform)
+    t.transCata[T](endoTransform)
   }
 
-  def reduce[T, U](
-      e: T)(implicit TR: Recursive.Aux[T, ExprF], TC: Corecursive.Aux[T, ExprF], UC: Corecursive.Aux[U, CommonF]): U = {
+  def reduce[T, U](t: T)(implicit T: Birecursive.Aux[T, ExprF], U: Corecursive.Aux[U, CommonF]): U = {
     import ExprF._
 
     def aux(vars: Map[String, Int])(t: T, tp: String => T): CommonF[Free[CommonF, T]] = {
@@ -244,7 +235,7 @@ object manipulate {
         }
     }
 
-    e.transFutu(coalgebraicGTransform)
+    t.transFutu(coalgebraicGTransform)
   }
 
 }

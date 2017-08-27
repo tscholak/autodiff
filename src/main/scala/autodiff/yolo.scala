@@ -12,9 +12,9 @@ import Scalaz._
 
 object yolo extends App {
 
-  def expr[T](implicit TC: Corecursive.Aux[T, ExprF]): T = {
+  def expr[T](implicit T: Corecursive.Aux[T, ExprF]): T = {
     import ExprF._
-    partialF[T]((sinF[T](floatVarF[T]("x")), Map("x" -> 5)))
+    partialF[T]((sinF[T](prodF[T]((floatVarF[T]("x"), floatVarF[T]("y")))), Map("x" -> 1, "y" -> 1)))
   }
 
   val reduced: Nu[CommonF] =
@@ -22,8 +22,10 @@ object yolo extends App {
 
   reduced.println
 
-  manipulate.simplify[Nu[CommonF]](reduced).println
+  val simplified: Nu[CommonF] = manipulate.simplify[Nu[CommonF]](reduced)(pedantic = false)
 
-  manipulate.evaluate(reduced).run(Map("x" -> 0d)).println
+  simplified.println
+
+  manipulate.evaluate(simplified).run(Map("x" -> 0d, "y" -> 0d)).println
 
 }

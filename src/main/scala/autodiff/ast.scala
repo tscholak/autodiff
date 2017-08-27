@@ -59,12 +59,12 @@ object ast {
           implicit evidence$1: Applicative[G]): G[CommonF[B]] = fa match {
         case FloatVarF(n)   => floatVarF[B](n).point[G]
         case FloatConstF(v) => floatConstF[B](v).point[G]
-        case IdF(e)         => f(e).map(idF(_))
-        case NegF(e)        => f(e).map(negF(_))
-        case ExpF(e)        => f(e).map(expF(_))
-        case LogF(e)        => f(e).map(logF(_))
-        case SinF(e)        => f(e).map(sinF(_))
-        case CosF(e)        => f(e).map(cosF(_))
+        case IdF(e)         => f(e) ∘ (idF(_))
+        case NegF(e)        => f(e) ∘ (negF(_))
+        case ExpF(e)        => f(e) ∘ (expF(_))
+        case LogF(e)        => f(e) ∘ (logF(_))
+        case SinF(e)        => f(e) ∘ (sinF(_))
+        case CosF(e)        => f(e) ∘ (cosF(_))
         case AddF(e1, e2)   => (f(e1) ⊛ f(e2))(addF(_, _))
         case SubF(e1, e2)   => (f(e1) ⊛ f(e2))(subF(_, _))
         case ProdF(e1, e2)  => (f(e1) ⊛ f(e2))(prodF(_, _))
@@ -113,7 +113,7 @@ object ast {
     implicit val traverse: Traverse[ExtensionF] = new Traverse[ExtensionF] {
       override def traverseImpl[G[_], A, B](fa: ExtensionF[A])(f: (A) => G[B])(
           implicit evidence$1: Applicative[G]): G[ExtensionF[B]] = fa match {
-        case PartialF(e, vs) => f(e).map(partialF[B](_, vs))
+        case PartialF(e, vs) => f(e) ∘ (partialF[B](_, vs))
       }
     }
 
