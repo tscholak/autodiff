@@ -22,11 +22,11 @@ object manipulate {
       case FloatVarF(n)   => for { m <- get } yield m.get(n)
       case FloatConstF(v) => point(Some(v))
       case IdF(x)         => point(x)
-      case NegF(x)        => point(x.map(-_))
-      case ExpF(x)        => point(x.map(exp))
-      case LogF(x)        => point(x.map(log))
-      case SinF(x)        => point(x.map(sin))
-      case CosF(x)        => point(x.map(cos))
+      case NegF(x)        => point(x ∘ (-_))
+      case ExpF(x)        => point(x ∘ (exp))
+      case LogF(x)        => point(x ∘ (log))
+      case SinF(x)        => point(x ∘ (sin))
+      case CosF(x)        => point(x ∘ (cos))
       case AddF(x, y)     => point((x ⊛ y)(_ + _))
       case SubF(x, y)     => point((x ⊛ y)(_ - _))
       case ProdF(x, y)    => point((x ⊛ y)(_ * _))
@@ -124,7 +124,7 @@ object manipulate {
     }
 
     def coalgebraicGTransform: ExprF[T] => CommonF[Free[CommonF, T]] = {
-      case commonExprF(e) => e.map(Free.point)
+      case commonExprF(e) => e ∘ Free.point
       case extendedExprF(PartialF(t, vars)) =>
         t.project match {
           case commonExprF(FloatVarF(name)) if vars.get(name).exists(_ <= 0) =>
